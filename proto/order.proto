@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package order;
+
+// Binary communication infrastructure contract
+service OrderService {
+  rpc ProcessTransaction (TransactionRequest) returns (TransactionResponse);
+}
+
+// Inbound validation tokens mapping fields
+message TransactionRequest {
+  string userId = 1;
+  string productId = 2;
+  double amount = 3;
+}
+
+// Outbound serialized feedback parameters payload
+message TransactionResponse {
+  string transactionId = 1;
+  string status = 2;
+  string message = 3;
+}

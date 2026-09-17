@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2022",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "strictPropertyInitialization": false,
+    "types": ["node"],
+    
+    // 🚀 NESTJS MONOREPO PATH RESOLUTION MAPPINGS ADDED HERE:
+    "rootDir": "./",
+   "paths": {
+      "api-gateway/*": ["./apps/api-gateway/src/*"],
+      "order-service/*": ["./apps/order-service/src/*"],
+      "analytics-service/*": ["./apps/analytics-service/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "test"]
+}

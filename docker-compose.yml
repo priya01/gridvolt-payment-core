@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  # 🌐 Component A: Perimeter API Gateway Router Node
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: node dist/apps/api-gateway/src/main.js
+    ports:
+      - "3200:3200"
+    environment:
+      - PORT=3200
+      - KAFKA_BROKER=kafka:9092
+    depends_on:
+      kafka-init-topics:
+        condition: service_completed_successfully
+
+  # ⚡ Component B: Synchronous High-Frequency Transactional Node
+  order-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: node dist/apps/order-service/src/main.js
+    ports:
+      - "50051:50051"
+    environment:
+      - PORT=50051
+      - KAFKA_BROKER=kafka:9092
+    depends_on:
+      kafka-init-topics:
+        condition: service_completed_successfully
+
+  # 📥 Component C: Asynchronous Historical Logging Telemetry Node
+  analytics-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: node dist/apps/analytics-service/src/main.js
+    environment:
+      - MONGO_URI=mongodb://db:27017/gridvoltdb
+      - KAFKA_BROKER=kafka:9092
+    depends_on:
+      db:
+        condition: service_started
+      kafka-init-topics:
+        condition: service_completed_successfully
+
+  # 💾 Component D: Partitioned Persistent Database Cluster
+  db:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_payment_data:/data/db
+
+  # ✉️ Component E: Centralized KRaft Mode Event Streaming Mesh Broker
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_NODE_ID=1
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_LOG_DIRS=/var/lib/kafka/data
+      - CLUSTER_ID=MkU3OEVBNTcwNTJENDM2Qk
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+
+  # 🚀 AUTOMATIC KAFKA TOPIC PROVISIONER (Pre-creates target topics safely)
+  kafka-init-topics:
+    image: confluentinc/cp-kafka:7.6.0
+    depends_on:
+      - kafka
+    entrypoint: [ "sh", "-c" ]
+    command: |
+      "
+      echo 'Waiting for Kafka to be ready...'
+      kafka-topics --bootstrap-server kafka:9092 --list
+      
+      echo 'Creating transaction.analytics.stream topic...'
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic transaction.analytics.stream --partitions 1 --replication-factor 1
+      
+      echo 'Topic structure successfully verified!'
+      "
+
+volumes:
+  mongo_payment_data:
